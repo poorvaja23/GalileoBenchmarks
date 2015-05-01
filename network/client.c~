@@ -1,21 +1,3 @@
-/*
- * Galileo Benchmark
- *
- * Description: This program runs on the client. It takes the ip address and port number from user
- *              as command line values. This code transfers the sensor data from client to the server.
- *              
- *
- * author:
- *  Poorvaja Rajagopal
- *
- * Version: 1.0
- * Date: 5/1/2015
- *
- *
- * Version: 1.0
- * Date: 5/1/2015
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

@@ -22,6 +22,10 @@
 #include <sys/mman.h>
 #include <linux/videodev2.h>
 #include <libv4l2.h>
+#include <time.h>
+#include <sys/time.h>
+#include <inttypes.h>
+
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -43,6 +47,12 @@ static void xioctl(int fh, int request, void *arg)
                 exit(EXIT_FAILURE);
         }
 }
+static inline uint64_t RDTSC()
+{
+  unsigned int hi, lo;
+  __asm__ volatile("rdtsc" : "=a" (lo), "=d" (hi));
+  return ((uint64_t)hi << 32) | lo;
+}
 
 int main(int argc, char **argv)
 {
@@ -58,7 +68,10 @@ int main(int argc, char **argv)
         char                            out_name[256];
         FILE                            *fout=0;
         struct buffer                   *buffers=0;
-printf("1");
+        uint64_t starti=0, endi=0;
+        struct timeval begini, finishi;
+        starti = RDTSC();
+        gettimeofday(&begini, NULL);
         fd = v4l2_open(dev_name, O_RDWR | O_NONBLOCK, 0);
         if (fd < 0) {
                 perror("Cannot open device");
@@ -118,7 +131,7 @@ printf("2");
 
         xioctl(fd, VIDIOC_STREAMON, &type);
 printf("3");
-        for (i = 0; i < 5; i++) {
+        for (i = 0; i < 20; i++) {
                 do {
                         FD_ZERO(&fds);
                         FD_SET(fd, &fds);
@@ -129,16 +142,24 @@ printf("3");
 
                         r = select(fd + 1, &fds, NULL, NULL, &tv);
                 } while ((r == -1 && (errno = EINTR)));
-                if (r == -1) {
+              if (r == -1) {
                         perror("select");
                         return errno;
-                }
+                }  
 
-                CLEAR(buf);
-                buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-                buf.memory = V4L2_MEMORY_MMAP;
-                xioctl(fd, VIDIOC_DQBUF, &buf);
-
+//                CLEAR(buf);
+  //              buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    //            buf.memory = V4L2_MEMORY_MMAP;
+   //            xioctl(fd, VIDIOC_DQBUF, &buf);
+int qw, fy;
+//do {
+for (fy=0; fy<5; fy++)
+{
+qw = v4l2_ioctl(fd, VIDIOC_DQBUF, &buf);
+if (qw!=-1)
+break;  
+}
+//}while(qw==-1);
                 sprintf(out_name, "out%03d.ppm", i);
                 fout = fopen(out_name, "w");
                 if (!fout) {
@@ -150,14 +171,27 @@ printf("3");
                 fwrite(buffers[buf.index].start, buf.bytesused, 1, fout);
                 fclose(fout);
 
-                xioctl(fd, VIDIOC_QBUF, &buf);
+            //    xioctl(fd, VIDIOC_QBUF, &buf);
+for (fy=0; fy<5; fy++)
+{
+  qw = v4l2_ioctl(fd, VIDIOC_QBUF, &buf);
+if (qw!=-1)
+break;
+}
+
         }
 
- /*       type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         xioctl(fd, VIDIOC_STREAMOFF, &type);
+//qw = v4l2_ioctl(fd, VIDIOC_STREAMOFF, &type);
         for (i = 0; i < n_buffers; ++i)
                 v4l2_munmap(buffers[i].start, buffers[i].length);
-        v4l2_close(fd);*/
-
+        v4l2_close(fd);
+        endi=RDTSC();
+        gettimeofday(&finishi, NULL);
+   printf("time elapesed:%ld\n", ((finishi.tv_sec * 1000000 + finishi.tv_usec) - (begini.tv_sec * 1000000 + begini.tv_usec)));
+   printf("cycles");
+printf("%"PRIu64"\n", endi-starti);
+ 
         return 0;
 }
